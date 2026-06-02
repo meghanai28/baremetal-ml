@@ -1,15 +1,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define N 10
+#define N 1000
 #define D 3
 #define LR 0.01f
-#define EPOCHS 5000
+#define EPOCHS 2000
 
 
 float rand_float(void)
 {
     return ((float) rand() / RAND_MAX) * 2.0f - 1.0f;
+}
+
+float predict(const float x[D], const float w[D], float b)
+{
+    float pred = b;
+    for (int j = 0; j<D; j++)
+    {
+        pred += x[j] * w[j];
+    }
+    return pred;
 }
 
 int main (void)
@@ -37,27 +47,27 @@ int main (void)
     }
 
     // print the dataset
-    for (int i = 0; i<N; i++)
-    {
-        printf("row %d: ", i);
-        for (int j = 0; j< D; j++)
-        {
-            printf("X[%d][%d] = %.3f ", i,j, X[i][j]);
-        }
-        printf("y = %.3f\n", y[i]);
-    }
+    // for (int i = 0; i<N; i++)
+    // {
+    //     printf("row %d: ", i);
+    //     for (int j = 0; j< D; j++)
+    //     {
+    //         printf("X[%d][%d] = %.3f ", i,j, X[i][j]);
+    //     }
+    //     printf("y = %.3f\n", y[i]);
+    // }
 
     // initalize weights and bias
     float w[D] = {0.0f};
     float b = 0.0f;
 
-    printf("\n inital model params \n");
+    // printf("\n inital model params \n");
 
-    for (int i = 0; i<D; i ++)
-    {
-        printf("w[%d] = %.3f\n", i, w[i]);
-    }
-    printf("b = %.3f\n", b);
+    // for (int i = 0; i<D; i ++)
+    // {
+    //     printf("w[%d] = %.3f\n", i, w[i]);
+    // }
+    // printf("b = %.3f\n", b);
 
 
     for (int e = 0; e < EPOCHS; e ++)
@@ -68,11 +78,7 @@ int main (void)
 
         for (int i = 0; i < N; i++)
         {
-            float pred = b;
-            for (int j = 0; j<D; j++)
-            {
-                pred += X[i][j] * w[j];
-            }
+            float pred = predict(X[i],w,b);
             float r_error = pred - y[i];
 
             for (int j = 0; j<D; j++)
@@ -101,7 +107,7 @@ int main (void)
         }
     }
 
-    printf("\n Updated Weights/Params after %d epochs:\n", EPOCHS);
+    printf("\nUpdated Weights/Params after %d epochs:\n", EPOCHS);
 
     for (int j =0; j<D; j++)
     {
@@ -110,5 +116,4 @@ int main (void)
     printf("b = %.3f\n",b);
 
     return 0;
-
 }

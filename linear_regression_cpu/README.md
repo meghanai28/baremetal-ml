@@ -1,4 +1,4 @@
-# Linear Regression Benchmark
+# Linear Regression CPU Benchmark
 
 This benchmark compares linear regression training across C, BLAS, PyTorch, and naive Python.
 

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <cblas.h>
 
 #define N 100000
 #define D 100
@@ -22,40 +23,53 @@ float rand_float(void)
     return ((float) rand() / RAND_MAX) * 2.0f - 1.0f;
 }
 
-float predict(const float *x, const float w[D], float b)
-{
-    float pred = b;
-    for (int j = 0; j<D; j++)
-    {
-        pred += x[j] * w[j];
-    }
-    return pred;
-}
-
-float compute_loss_and_gradients(const float *X, const float *y, const float w[D], float b, float grad_w[D], float *grad_b)
+float compute_loss_and_gradients(const float *X, const float *y, const float w[D], float b, float *pred, float grad_w[D], float *grad_b)
 {
 
-    for (int j = 0; j < D; j++)
-    {
-        grad_w[j] = 0.0f;
-    }
+    // pred = X*w
+    // y = alpha * A * x + beta * y
+    // pred = 1.0 * X * w + 0.0 * pred
+    cblas_sgemv(
+        CblasRowMajor, // X is stored row by row
+        CblasNoTrans, // use X not tranpsose
+        N, //rows of X
+        D, // columbs of X
+        1.0f, // alpha 
+        X, // matrix X
+        D, // row length
+        w, // vector w
+        1, // step through w by 1
+        0.0f, //beta
+        pred, // output vector
+        1 // step through predby 1
+    );
+
     *grad_b = 0.0f;
     float total_loss = 0.0f;
 
     for (int i = 0; i < N; i++)
     {
-        float pred = predict(&X[i*D],w,b);
-        float r_error = pred - y[i];
-
-        for (int j = 0; j<D; j++)
-        {
-            grad_w[j] += r_error * X[i*D +j];
-        }
-
-        total_loss += r_error * r_error;
-        *grad_b += r_error;
+        pred[i] = pred[i] + b - y[i];
+        total_loss += pred[i] * pred[i];
+        *grad_b += pred[i];
     }
 
+    //grad_w = X^T * error
+    cblas_sgemv(
+        CblasRowMajor,
+        CblasTrans,
+        N,
+        D,
+        1.0f,
+        X,
+        D,
+        pred,
+        1,
+        0.0f,
+        grad_w,
+        1
+    );
+    
     for (int i = 0; i <D; i++)
     {
         grad_w[i] = (2.0f/N) * grad_w[i];
@@ -103,14 +117,16 @@ int main (void)
     // X - features/inputs
     // y - the true label
     // BLAS - flat contigious array
-    float *X = malloc(N*D * sizeof(float));
-    float *y = malloc(N*sizeof(float));
+    float *X = malloc(N * D * sizeof(float));
+    float *y = malloc(N * sizeof(float));
+    float *pred = malloc(N * sizeof(float));
 
-    if (X == NULL || y == NULL)
+    if (X == NULL || y == NULL || pred == NULL)
     {
         fprintf(stderr, "Memory allocation failed\n");
         free(X);
         free(y);
+        free(pred);
         return 1;
     }
 
@@ -121,11 +137,12 @@ int main (void)
         for (int j = 0; j<D; j++)
         {
             X[i*D+j] = rand_float();
-            y[i] += X[i*D+j] * true_w[j];
+            y[i] += X[i * D + j] * true_w[j];
         }
     }
 
     // initalize weights and bias
+
 
     double total_elapsed = 0.0;
     double best_elapsed = 1e9;
@@ -147,7 +164,7 @@ int main (void)
             float grad_w[D];
             float grad_b;
 
-            mse = compute_loss_and_gradients(X,y,w,b,grad_w,&grad_b);
+            mse = compute_loss_and_gradients(X,y,w,b,pred,grad_w,&grad_b);
             update_params(w,&b,grad_w,grad_b);
         }
         double end = seconds_now();
@@ -193,6 +210,7 @@ int main (void)
     printf("avg_time_per_epoch_ms = %.8f\n", (avg_elapsed/EPOCHS)*1000.0);
     printf("avg_samples_per_second = %.8f\n", ((double) N * EPOCHS) / avg_elapsed);
     
+    free(pred);
     free(X);
     free(y);
     return 0;

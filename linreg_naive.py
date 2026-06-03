@@ -1,11 +1,12 @@
 import time;
 import random;
 
+# cant really do apples to apples since naive python so slow
 N = 1000
-D = 3
+D = 30
 LR = 0.01
-EPOCHS = 10000
-RUNS = 10
+EPOCHS = 5000
+RUNS = 3
 
 def seconds_now():
     return time.perf_counter()
@@ -54,8 +55,11 @@ def main():
     print("baremetal linear regression implementation - python")
     print(f"N={N}, D = {D}")
 
+    true_w = [rand_float() for _ in range(D)]
+    true_b = 4.0
+
     X = [[rand_float() for _ in range(D)] for _ in range(N)]
-    y = [(3.0 * X[i][0] - 2.0 * X[i][1] + 0.5 * X[i][2] + 4.0) for i in range(N)]
+    y = [true_b + sum(X[i][j] * true_w[j] for j in range(D)) for i in range(N)]
 
     total_elapsed = 0.0
     best_elapsed = float('inf')
